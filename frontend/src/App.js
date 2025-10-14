@@ -6,8 +6,11 @@ import ProtectedRoute from './components/ProtectedRoute';
 import LMSDashboard from './pages/LMSDashboard';
 import Login from './pages/Login';
 import Assessments from './pages/Assessments';
-import Quiz from './pages/Quiz'; // Add this
-import Results from './pages/Results'; // Add this
+import Quiz from './pages/Quiz';
+import Results from './pages/Results';
+import Practical from './pages/Practical'; // Add this for Task 5
+import AdminDashboard from './pages/AdminDashboard'; // Add this for Task 5
+import ProtectedAdminRoute from './components/ProtectedAdminRoute'; // Add this for Task 5
 import './App.css'; // Keep for global styles if needed
 
 function App() {
@@ -43,7 +46,23 @@ function App() {
             }
           />
           <Route
-            path="/results/:category"
+            path="/practical"
+            element={
+              <ProtectedRoute>
+                <Practical />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedAdminRoute>
+                <AdminDashboard />
+              </ProtectedAdminRoute>
+            }
+          />
+          <Route
+            path="/results/:type?"
             element={
               <ProtectedRoute>
                 <Results />
@@ -57,6 +76,69 @@ function App() {
 }
 
 export default App;
+
+
+
+
+// import React from 'react';
+// import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+// import { AuthProvider } from './contexts/AuthContext';
+// import Header from './components/Header';
+// import ProtectedRoute from './components/ProtectedRoute';
+// import LMSDashboard from './pages/LMSDashboard';
+// import Login from './pages/Login';
+// import Assessments from './pages/Assessments';
+// import Quiz from './pages/Quiz'; // Add this
+// import Results from './pages/Results'; // Add this
+// import './App.css'; // Keep for global styles if needed
+
+// function App() {
+//   return (
+//     <Router>
+//       <AuthProvider>
+//         <Header />
+//         <Routes>
+//           <Route path="/login" element={<Login />} />
+//           <Route
+//             path="/lms"
+//             element={
+//               <ProtectedRoute>
+//                 <LMSDashboard />
+//               </ProtectedRoute>
+//             }
+//           />
+//           <Route path="/" element={<Login />} />
+//           <Route
+//             path="/assessments"
+//             element={
+//               <ProtectedRoute>
+//                 <Assessments />
+//               </ProtectedRoute>
+//             }
+//           />
+//           <Route
+//             path="/quiz/:category"
+//             element={
+//               <ProtectedRoute>
+//                 <Quiz />
+//               </ProtectedRoute>
+//             }
+//           />
+//           <Route
+//             path="/results/:category"
+//             element={
+//               <ProtectedRoute>
+//                 <Results />
+//               </ProtectedRoute>
+//             }
+//           />
+//         </Routes>
+//       </AuthProvider>
+//     </Router>
+//   );
+// }
+
+// export default App;
 
 
 

