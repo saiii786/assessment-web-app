@@ -16,12 +16,36 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000' }));
+// ====================
+// ✅ CORS Configuration
+// ====================
+const allowedOrigins = [
+  'https://assessment-web-app-five.vercel.app', // Current deployed frontend
+  'https://assessment-web-app-git-main-sai-ganeshs-projects-21941860.vercel.app', // Old Vercel build (for compatibility)
+  'http://localhost:3000', // Local dev
+];
+
+// Dynamically allow only valid origins
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.warn(`❌ Blocked CORS request from: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
-// Verify MongoDB URI is loaded
-const mongoURI = process.env.MONGO_URI || process.env.MONGO_URI;
+// ====================
+// ✅ MongoDB Connection
+// ====================
+const mongoURI = process.env.MONGO_URI;
 if (!mongoURI) {
   console.error('❌ MongoDB URI missing! Add MONGO_URI=your_connection_string in .env');
   process.exit(1);
@@ -56,14 +80,23 @@ const seedQuizzes = async () => {
       'verbal-reasoning',
       'logical-reasoning',
       'abstract-reasoning',
-      'programming-fundamentals'
+      'programming-fundamentals',
     ];
+
     for (const cat of categories) {
       const existing = await Quiz.findOne({ category: cat });
       if (!existing) {
         const sampleQuestions = [
-          { text: `What is a sample ${cat} question? Option A is correct.`, options: ['A', 'B', 'C', 'D'], correctIndex: 0 },
-          { text: `Another ${cat} Q: Choose B.`, options: ['W', 'X', 'Y', 'Z'], correctIndex: 1 },
+          {
+            text: `What is a sample ${cat} question? Option A is correct.`,
+            options: ['A', 'B', 'C', 'D'],
+            correctIndex: 0,
+          },
+          {
+            text: `Another ${cat} Q: Choose B.`,
+            options: ['W', 'X', 'Y', 'Z'],
+            correctIndex: 1,
+          },
           { text: `Q3 for ${cat}: C right.`, options: ['1', '2', '3', '4'], correctIndex: 2 },
           { text: `Q4: True.`, options: ['True', 'False'], correctIndex: 0 },
           { text: `Q5: D.`, options: ['Opt1', 'Opt2', 'Opt3', 'Opt4'], correctIndex: 3 },
@@ -83,10 +116,20 @@ const seedScenarios = async () => {
   try {
     const Scenario = require('./models/Practical').Scenario;
     const samples = [
-      { title: 'Database Halt', description: 'Production DB unresponsive — describe your troubleshooting process.' },
-      { title: 'API Bug Fix', description: 'API returning 500 errors intermittently — outline debugging steps.' },
-      { title: 'Performance Issue', description: 'App load time spiked — explain optimization plan.' },
+      {
+        title: 'Database Halt',
+        description: 'Production DB unresponsive — describe your troubleshooting process.',
+      },
+      {
+        title: 'API Bug Fix',
+        description: 'API returning 500 errors intermittently — outline debugging steps.',
+      },
+      {
+        title: 'Performance Issue',
+        description: 'App load time spiked — explain optimization plan.',
+      },
     ];
+
     for (const s of samples) {
       const existing = await Scenario.findOne({ title: s.title });
       if (!existing) {
@@ -111,6 +154,126 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   connectDB(); // connect only after server starts
 });
+
+
+
+
+
+
+
+// // server.js
+// const express = require('express');
+// const cors = require('cors');
+// const mongoose = require('mongoose');
+// const dotenv = require('dotenv');
+
+// // Route imports
+// const authRoutes = require('./routes/auth');
+// const quizRoutes = require('./routes/quizzes');
+// const practicalRoutes = require('./routes/practicals');
+// const adminRoutes = require('./routes/admin');
+
+// // Load environment variables
+// dotenv.config();
+
+// const app = express();
+// const PORT = process.env.PORT || 5000;
+
+// // Middleware
+// app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000' }));
+// app.use(express.json());
+
+// // Verify MongoDB URI is loaded
+// const mongoURI = process.env.MONGO_URI || process.env.MONGO_URI;
+// if (!mongoURI) {
+//   console.error('❌ MongoDB URI missing! Add MONGO_URI=your_connection_string in .env');
+//   process.exit(1);
+// }
+
+// // Basic route
+// app.get('/', (req, res) => {
+//   res.send('✅ Assessment Web App Backend is Running!');
+// });
+
+// // ---- MongoDB Connection ----
+// const connectDB = async () => {
+//   try {
+//     await mongoose.connect(mongoURI);
+//     console.log('✅ MongoDB Connected Successfully');
+//     await seedQuizzes();
+//     await seedScenarios();
+//   } catch (err) {
+//     console.error('❌ MongoDB Connection Error:', err);
+//     process.exit(1);
+//   }
+// };
+
+// // ---- Seed Quizzes ----
+// const seedQuizzes = async () => {
+//   try {
+//     const Quiz = require('./models/Quiz');
+//     const categories = [
+//       'aptitude',
+//       'vocabulary',
+//       'numerical-reasoning',
+//       'verbal-reasoning',
+//       'logical-reasoning',
+//       'abstract-reasoning',
+//       'programming-fundamentals'
+//     ];
+//     for (const cat of categories) {
+//       const existing = await Quiz.findOne({ category: cat });
+//       if (!existing) {
+//         const sampleQuestions = [
+//           { text: `What is a sample ${cat} question? Option A is correct.`, options: ['A', 'B', 'C', 'D'], correctIndex: 0 },
+//           { text: `Another ${cat} Q: Choose B.`, options: ['W', 'X', 'Y', 'Z'], correctIndex: 1 },
+//           { text: `Q3 for ${cat}: C right.`, options: ['1', '2', '3', '4'], correctIndex: 2 },
+//           { text: `Q4: True.`, options: ['True', 'False'], correctIndex: 0 },
+//           { text: `Q5: D.`, options: ['Opt1', 'Opt2', 'Opt3', 'Opt4'], correctIndex: 3 },
+//         ];
+//         await new Quiz({ category: cat, questions: sampleQuestions }).save();
+//         console.log(`🌱 Seeded quiz category: ${cat}`);
+//       }
+//     }
+//     console.log('✅ All quizzes seeded!');
+//   } catch (err) {
+//     console.error('❌ Quiz seeding error:', err);
+//   }
+// };
+
+// // ---- Seed Scenarios ----
+// const seedScenarios = async () => {
+//   try {
+//     const Scenario = require('./models/Practical').Scenario;
+//     const samples = [
+//       { title: 'Database Halt', description: 'Production DB unresponsive — describe your troubleshooting process.' },
+//       { title: 'API Bug Fix', description: 'API returning 500 errors intermittently — outline debugging steps.' },
+//       { title: 'Performance Issue', description: 'App load time spiked — explain optimization plan.' },
+//     ];
+//     for (const s of samples) {
+//       const existing = await Scenario.findOne({ title: s.title });
+//       if (!existing) {
+//         await new Scenario(s).save();
+//         console.log(`🌱 Seeded scenario: ${s.title}`);
+//       }
+//     }
+//     console.log('✅ All practical scenarios seeded!');
+//   } catch (err) {
+//     console.error('❌ Scenario seeding error:', err);
+//   }
+// };
+
+// // ---- Routes ----
+// app.use('/api/auth', authRoutes);
+// app.use('/api/quizzes', quizRoutes);
+// app.use('/api/practicals', practicalRoutes);
+// app.use('/api/admin', adminRoutes);
+
+// // ---- Start Server ----
+// app.listen(PORT, () => {
+//   console.log(`🚀 Server running on port ${PORT}`);
+//   connectDB(); // connect only after server starts
+// });
 
 
 
