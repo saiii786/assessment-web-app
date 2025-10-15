@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const router = express.Router();
 
-// ---- Helper ----
+// Helper: generate JWT token
 const generateToken = (user) => {
   return jwt.sign(
     { id: user._id, role: user.role },
@@ -12,10 +12,10 @@ const generateToken = (user) => {
   );
 };
 
-// ---- Signup ----
+// ----------------- SIGNUP -----------------
 router.post('/signup', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { email, password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ msg: 'Email and password are required' });
@@ -26,7 +26,9 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ msg: 'User already exists' });
     }
 
-    const newUser = new User({ name, email, password });
+    const newUser = new User({ email, password });
+
+    // Optional: automatically mark admin users by email pattern
     if (email.includes('admin')) {
       newUser.role = 'admin';
     }
@@ -38,7 +40,6 @@ router.post('/signup', async (req, res) => {
       token,
       user: {
         id: newUser._id,
-        name: newUser.name,
         email: newUser.email,
         role: newUser.role,
       },
@@ -49,7 +50,7 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-// ---- Login ----
+// ----------------- LOGIN -----------------
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -68,7 +69,6 @@ router.post('/login', async (req, res) => {
       token,
       user: {
         id: user._id,
-        name: user.name,
         email: user.email,
         role: user.role,
       },
@@ -80,6 +80,93 @@ router.post('/login', async (req, res) => {
 });
 
 module.exports = router;
+
+
+
+
+
+// const express = require('express');
+// const jwt = require('jsonwebtoken');
+// const User = require('../models/User');
+// const router = express.Router();
+
+// // ---- Helper ----
+// const generateToken = (user) => {
+//   return jwt.sign(
+//     { id: user._id, role: user.role },
+//     process.env.JWT_SECRET,
+//     { expiresIn: '1h' }
+//   );
+// };
+
+// // ---- Signup ----
+// router.post('/signup', async (req, res) => {
+//   try {
+//     const { name, email, password } = req.body;
+
+//     if (!email || !password) {
+//       return res.status(400).json({ msg: 'Email and password are required' });
+//     }
+
+//     const existingUser = await User.findOne({ email });
+//     if (existingUser) {
+//       return res.status(400).json({ msg: 'User already exists' });
+//     }
+
+//     const newUser = new User({ name, email, password });
+//     if (email.includes('admin')) {
+//       newUser.role = 'admin';
+//     }
+
+//     await newUser.save();
+
+//     const token = generateToken(newUser);
+//     res.status(201).json({
+//       token,
+//       user: {
+//         id: newUser._id,
+//         name: newUser.name,
+//         email: newUser.email,
+//         role: newUser.role,
+//       },
+//     });
+//   } catch (err) {
+//     console.error('❌ Signup Error:', err.message);
+//     res.status(500).json({ msg: 'Server error during signup', error: err.message });
+//   }
+// });
+
+// // ---- Login ----
+// router.post('/login', async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     if (!email || !password) {
+//       return res.status(400).json({ msg: 'Email and password are required' });
+//     }
+
+//     const user = await User.findOne({ email });
+//     if (!user || !(await user.comparePassword(password))) {
+//       return res.status(401).json({ msg: 'Invalid credentials' });
+//     }
+
+//     const token = generateToken(user);
+//     res.json({
+//       token,
+//       user: {
+//         id: user._id,
+//         name: user.name,
+//         email: user.email,
+//         role: user.role,
+//       },
+//     });
+//   } catch (err) {
+//     console.error('❌ Login Error:', err.message);
+//     res.status(500).json({ msg: 'Server error during login', error: err.message });
+//   }
+// });
+
+// module.exports = router;
 
 
 
