@@ -1,3 +1,79 @@
+const express = require('express');
+const cors = require('cors');
+const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+const authRoutes = require('./routes/auth');
+const quizRoutes = require('./routes/quizzes');
+const practicalRoutes = require('./routes/practicals');
+const adminRoutes = require('./routes/admin');
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Middleware
+app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000' }));
+app.use(express.json());
+
+// Database Connection (NEW: This was missing!)
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log('MongoDB connected successfully!');
+    // NEW: Seed quizzes after connection
+    seedQuizzes();
+  })
+  .catch((err) => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1); // Exit if DB fails
+  });
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/quizzes', quizRoutes);
+app.use('/api/practicals', practicalRoutes);
+app.use('/api/admin', adminRoutes);
+
+// Basic route
+app.get('/', (req, res) => {
+  res.send('Assessment Web App Backend is Running!');
+});
+
+// Seed quizzes (IMPROVED: Made async, called after DB connect)
+const seedQuizzes = async () => {
+  try {
+    const Quiz = require('./models/Quiz');
+    const categories = ['aptitude', 'vocabulary', 'numerical-reasoning', 'verbal-reasoning', 'logical-reasoning', 'abstract-reasoning', 'programming-fundamentals'];
+    for (const cat of categories) {
+      const existing = await Quiz.findOne({ category: cat });
+      if (!existing) {
+        const sampleQuestions = [
+          { text: `What is a sample ${cat} question? Option A is correct.`, options: ['A', 'B', 'C', 'D'], correctIndex: 0 },
+          { text: `Another ${cat} Q: Choose B.`, options: ['W', 'X', 'Y', 'Z'], correctIndex: 1 },
+          { text: `Q3 for ${cat}: C right.`, options: ['1', '2', '3', '4'], correctIndex: 2 },
+          { text: `Q4: True.`, options: ['True', 'False'], correctIndex: 0 },
+          { text: `Q5: D.`, options: ['Opt1', 'Opt2', 'Opt3', 'Opt4'], correctIndex: 3 },
+        ];
+        await new Quiz({ category: cat, questions: sampleQuestions }).save();
+        console.log(`Seeded ${cat} quiz`);
+      }
+    }
+    console.log('All quizzes seeded!');
+  } catch (err) {
+    console.error('Seeding error:', err);
+  }
+};
+
+// Start Server (NEW: This was missing!)
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+
+
+
+
+
 // const express = require('express');
 // const cors = require('cors');
 // const mongoose = require('mongoose');
@@ -163,54 +239,54 @@
 
 
 
-const express = require('express');
-const cors = require('cors');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const authRoutes = require('./routes/auth');
-const quizRoutes = require('./routes/quizzes');
-const practicalRoutes = require('./routes/practicals');
-const adminRoutes = require('./routes/admin');
+// const express = require('express');
+// const cors = require('cors');
+// const mongoose = require('mongoose');
+// const dotenv = require('dotenv');
+// const authRoutes = require('./routes/auth');
+// const quizRoutes = require('./routes/quizzes');
+// const practicalRoutes = require('./routes/practicals');
+// const adminRoutes = require('./routes/admin');
 
-dotenv.config();
+// dotenv.config();
 
-const app = express();
-const PORT = process.env.PORT || 5000;
+// const app = express();
+// const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000' }));
-app.use(express.json());
+// // Middleware
+// app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000' }));
+// app.use(express.json());
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/quizzes', quizRoutes);
-app.use('/api/practicals', practicalRoutes);
-app.use('/api/admin', adminRoutes);
+// // Routes
+// app.use('/api/auth', authRoutes);
+// app.use('/api/quizzes', quizRoutes);
+// app.use('/api/practicals', practicalRoutes);
+// app.use('/api/admin', adminRoutes);
 
-// Basic route
-app.get('/', (req, res) => {
-  res.send('Assessment Web App Backend is Running!');
-});
+// // Basic route
+// app.get('/', (req, res) => {
+//   res.send('Assessment Web App Backend is Running!');
+// });
 
-// Seed quizzes (from Task 4)
-const seedQuizzes = async () => {
-  const Quiz = require('./models/Quiz');
-  const categories = ['aptitude', 'vocabulary', 'numerical-reasoning', 'verbal-reasoning', 'logical-reasoning', 'abstract-reasoning', 'programming-fundamentals'];
-  for (const cat of categories) {
-    const existing = await Quiz.findOne({ category: cat });
-    if (!existing) {
-      const sampleQuestions = [
-        { text: `What is a sample ${cat} question? Option A is correct.`, options: ['A', 'B', 'C', 'D'], correctIndex: 0 },
-        { text: `Another ${cat} Q: Choose B.`, options: ['W', 'X', 'Y', 'Z'], correctIndex: 1 },
-        { text: `Q3 for ${cat}: C right.`, options: ['1', '2', '3', '4'], correctIndex: 2 },
-        { text: `Q4: True.`, options: ['True', 'False'], correctIndex: 0 },
-        { text: `Q5: D.`, options: ['Opt1', 'Opt2', 'Opt3', 'Opt4'], correctIndex: 3 },
-      ];
-      await new Quiz({ category: cat, questions: sampleQuestions }).save();
-      console.log(`Seeded ${cat} quiz`);
-    }
-  }
-};
+// // Seed quizzes (from Task 4)
+// const seedQuizzes = async () => {
+//   const Quiz = require('./models/Quiz');
+//   const categories = ['aptitude', 'vocabulary', 'numerical-reasoning', 'verbal-reasoning', 'logical-reasoning', 'abstract-reasoning', 'programming-fundamentals'];
+//   for (const cat of categories) {
+//     const existing = await Quiz.findOne({ category: cat });
+//     if (!existing) {
+//       const sampleQuestions = [
+//         { text: `What is a sample ${cat} question? Option A is correct.`, options: ['A', 'B', 'C', 'D'], correctIndex: 0 },
+//         { text: `Another ${cat} Q: Choose B.`, options: ['W', 'X', 'Y', 'Z'], correctIndex: 1 },
+//         { text: `Q3 for ${cat}: C right.`, options: ['1', '2', '3', '4'], correctIndex: 2 },
+//         { text: `Q4: True.`, options: ['True', 'False'], correctIndex: 0 },
+//         { text: `Q5: D.`, options: ['Opt1', 'Opt2', 'Opt3', 'Opt4'], correctIndex: 3 },
+//       ];
+//       await new Quiz({ category: cat, questions: sampleQuestions }).save();
+//       console.log(`Seeded ${cat} quiz`);
+//     }
+//   }
+// };
 
 // Seed scenarios (from Task 5 – defined inline here)
 const seedScenarios = async () => {
