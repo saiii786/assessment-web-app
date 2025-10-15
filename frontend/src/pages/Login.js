@@ -43,6 +43,7 @@ const Button = styled.button`
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');  // 👈 New: For signup
   const [isSignup, setIsSignup] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -57,6 +58,7 @@ function Login() {
     setIsSignup(!isSignup);
     setEmail('');
     setPassword('');
+    setUsername('');  // 👈 Clear username too
     setMessage('');
   };
 
@@ -71,8 +73,10 @@ function Login() {
         ? `${API_BASE_URL}/api/auth/signup`
         : `${API_BASE_URL}/api/auth/login`;
 
-      // 👇 Only email & password now
-      const payload = { email, password };
+      // 👇 Payload: Add username only for signup
+      const payload = isSignup
+        ? { email, password, username }  // 👈 Include username
+        : { email, password };
 
       const res = await axios.post(endpoint, payload, {
         headers: { 'Content-Type': 'application/json' },
@@ -84,11 +88,19 @@ function Login() {
       setTimeout(() => navigate('/dashboard'), 1200);
     } catch (err) {
       console.error('❌ Auth error:', err.response || err.message);
-      const errorMsg =
-        err.response?.data?.msg ||
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        'Server error';
+      let errorMsg = 'Server error';
+      
+      // 👈 Enhanced: Specific handling for common errors
+      if (err.response?.status === 500 && err.response?.data?.message?.includes('duplicate')) {
+        errorMsg = 'Username or email already exists';
+      } else if (err.response?.data?.msg) {
+        errorMsg = err.response.data.msg;
+      } else if (err.response?.data?.error) {
+        errorMsg = err.response.data.error;
+      } else if (err.response?.data?.message) {
+        errorMsg = err.response.data.message;
+      }
+
       setMessage(isSignup ? `Signup failed: ${errorMsg}` : `Login failed: ${errorMsg}`);
     } finally {
       setLoading(false);
@@ -107,6 +119,16 @@ function Login() {
       </button>
 
       <form onSubmit={handleSubmit}>
+        {isSignup && (  // 👈 Show username only for signup
+          <Input
+            type="text"
+            placeholder="Username (min 3 chars)"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required  // Enforce on form level
+            disabled={loading}
+          />
+        )}
         <Input
           type="email"
           placeholder="Email"
@@ -125,7 +147,7 @@ function Login() {
           autoComplete={isSignup ? 'new-password' : 'current-password'}
           disabled={loading}
         />
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading || (isSignup && username.length < 3)}>
           {loading
             ? isSignup
               ? 'Signing Up...'
@@ -144,6 +166,156 @@ function Login() {
 }
 
 export default Login;
+
+
+
+
+// import React, { useState } from 'react';
+// import { useNavigate } from 'react-router-dom';
+// import axios from 'axios';
+// import { useAuth } from '../contexts/AuthContext';
+// import styled from 'styled-components';
+
+// // ========== Styled Components ==========
+// const FormContainer = styled.div`
+//   max-width: 400px;
+//   margin: 2rem auto;
+//   padding: 2rem;
+//   border: 1px solid #ddd;
+//   border-radius: 8px;
+// `;
+
+// const Input = styled.input`
+//   display: block;
+//   width: 100%;
+//   padding: 0.75rem;
+//   margin: 0.5rem 0;
+//   border: 1px solid #ccc;
+//   border-radius: 4px;
+// `;
+
+// const Button = styled.button`
+//   width: 100%;
+//   padding: 0.75rem;
+//   background: #007bff;
+//   color: white;
+//   border: none;
+//   border-radius: 4px;
+//   cursor: pointer;
+//   &:hover {
+//     background: #0056b3;
+//   }
+//   &:disabled {
+//     background: #ccc;
+//     cursor: not-allowed;
+//   }
+// `;
+
+// // ========== Component ==========
+// function Login() {
+//   const [email, setEmail] = useState('');
+//   const [password, setPassword] = useState('');
+//   const [isSignup, setIsSignup] = useState(false);
+//   const [message, setMessage] = useState('');
+//   const [loading, setLoading] = useState(false);
+//   const { login } = useAuth();
+//   const navigate = useNavigate();
+
+//   // Your deployed backend base URL
+//   const API_BASE_URL = 'https://assessment-web-app.onrender.com';
+
+//   // Toggle between login and signup
+//   const handleToggle = () => {
+//     setIsSignup(!isSignup);
+//     setEmail('');
+//     setPassword('');
+//     setMessage('');
+//   };
+
+//   // Handle form submit
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+//     setLoading(true);
+//     setMessage('');
+
+//     try {
+//       const endpoint = isSignup
+//         ? `${API_BASE_URL}/api/auth/signup`
+//         : `${API_BASE_URL}/api/auth/login`;
+
+//       // 👇 Only email & password now
+//       const payload = { email, password };
+
+//       const res = await axios.post(endpoint, payload, {
+//         headers: { 'Content-Type': 'application/json' },
+//       });
+
+//       // Save auth info and redirect
+//       login(res.data.token, res.data.user);
+//       setMessage('Success! Redirecting...');
+//       setTimeout(() => navigate('/dashboard'), 1200);
+//     } catch (err) {
+//       console.error('❌ Auth error:', err.response || err.message);
+//       const errorMsg =
+//         err.response?.data?.msg ||
+//         err.response?.data?.error ||
+//         err.response?.data?.message ||
+//         'Server error';
+//       setMessage(isSignup ? `Signup failed: ${errorMsg}` : `Login failed: ${errorMsg}`);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   return (
+//     <FormContainer>
+//       <h2>{isSignup ? 'Sign Up' : 'Login'}</h2>
+//       <button
+//         onClick={handleToggle}
+//         style={{ marginBottom: '1rem' }}
+//         disabled={loading}
+//       >
+//         Switch to {isSignup ? 'Login' : 'Sign Up'}
+//       </button>
+
+//       <form onSubmit={handleSubmit}>
+//         <Input
+//           type="email"
+//           placeholder="Email"
+//           value={email}
+//           onChange={(e) => setEmail(e.target.value)}
+//           required
+//           autoComplete="email"
+//           disabled={loading}
+//         />
+//         <Input
+//           type="password"
+//           placeholder="Password"
+//           value={password}
+//           onChange={(e) => setPassword(e.target.value)}
+//           required
+//           autoComplete={isSignup ? 'new-password' : 'current-password'}
+//           disabled={loading}
+//         />
+//         <Button type="submit" disabled={loading}>
+//           {loading
+//             ? isSignup
+//               ? 'Signing Up...'
+//               : 'Logging In...'
+//             : isSignup
+//             ? 'Sign Up'
+//             : 'Login'}
+//         </Button>
+//       </form>
+
+//       {message && (
+//         <p style={{ color: message.includes('Success') ? 'green' : 'red' }}>{message}</p>
+//       )}
+//     </FormContainer>
+//   );
+// }
+
+// export default Login;
 
 
 

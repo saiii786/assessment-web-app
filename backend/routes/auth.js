@@ -15,18 +15,33 @@ const generateToken = (user) => {
 // ----------------- SIGNUP -----------------
 router.post('/signup', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, username } = req.body;  // 👈 Added username destructuring
 
-    if (!email || !password) {
-      return res.status(400).json({ msg: 'Email and password are required' });
+    // 👈 Enhanced validation for username (matches schema)
+    if (!email || !password || !username) {
+      return res.status(400).json({ msg: 'Email, password, and username are required' });
+    }
+    if (username.length < 3) {
+      return res.status(400).json({ msg: 'Username must be at least 3 characters' });
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {  // Optional: Basic username format (alphanum + underscore)
+      return res.status(400).json({ msg: 'Username can only contain letters, numbers, and underscores' });
     }
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ 
+      $or: [{ email }, { username }]  // 👈 Check duplicates on both email and username
+    });
     if (existingUser) {
-      return res.status(400).json({ msg: 'User already exists' });
+      return res.status(400).json({ 
+        msg: existingUser.email === email ? 'Email already exists' : 'Username already exists' 
+      });
     }
 
-    const newUser = new User({ email, password });
+    const newUser = new User({ 
+      email: email.toLowerCase().trim(),  // 👈 Clean input
+      password, 
+      username: username.trim()  // 👈 Pass username and clean it
+    });
 
     // Optional: automatically mark admin users by email pattern
     if (email.includes('admin')) {
@@ -41,11 +56,20 @@ router.post('/signup', async (req, res) => {
       user: {
         id: newUser._id,
         email: newUser.email,
+        username: newUser.username,  // 👈 Include username in response
         role: newUser.role,
       },
     });
   } catch (err) {
     console.error('❌ Signup Error:', err.message);
+    
+    // 👈 Specific handling for MongoDB duplicate key (E11000)
+    if (err.code === 11000) {
+      return res.status(400).json({ 
+        msg: 'Username or email already exists. Please choose different ones.' 
+      });
+    }
+    
     res.status(500).json({ msg: 'Server error during signup', error: err.message });
   }
 });
@@ -59,7 +83,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ msg: 'Email and password are required' });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email.toLowerCase().trim() });  // 👈 Minor: Clean input
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ msg: 'Invalid credentials' });
     }
@@ -70,6 +94,7 @@ router.post('/login', async (req, res) => {
       user: {
         id: user._id,
         email: user.email,
+        username: user.username,  // 👈 Optional: Include for consistency
         role: user.role,
       },
     });
@@ -80,6 +105,91 @@ router.post('/login', async (req, res) => {
 });
 
 module.exports = router;
+
+
+
+// const express = require('express');
+// const jwt = require('jsonwebtoken');
+// const User = require('../models/User');
+// const router = express.Router();
+
+// // Helper: generate JWT token
+// const generateToken = (user) => {
+//   return jwt.sign(
+//     { id: user._id, role: user.role },
+//     process.env.JWT_SECRET,
+//     { expiresIn: '1h' }
+//   );
+// };
+
+// // ----------------- SIGNUP -----------------
+// router.post('/signup', async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     if (!email || !password) {
+//       return res.status(400).json({ msg: 'Email and password are required' });
+//     }
+
+//     const existingUser = await User.findOne({ email });
+//     if (existingUser) {
+//       return res.status(400).json({ msg: 'User already exists' });
+//     }
+
+//     const newUser = new User({ email, password });
+
+//     // Optional: automatically mark admin users by email pattern
+//     if (email.includes('admin')) {
+//       newUser.role = 'admin';
+//     }
+
+//     await newUser.save();
+
+//     const token = generateToken(newUser);
+//     res.status(201).json({
+//       token,
+//       user: {
+//         id: newUser._id,
+//         email: newUser.email,
+//         role: newUser.role,
+//       },
+//     });
+//   } catch (err) {
+//     console.error('❌ Signup Error:', err.message);
+//     res.status(500).json({ msg: 'Server error during signup', error: err.message });
+//   }
+// });
+
+// // ----------------- LOGIN -----------------
+// router.post('/login', async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     if (!email || !password) {
+//       return res.status(400).json({ msg: 'Email and password are required' });
+//     }
+
+//     const user = await User.findOne({ email });
+//     if (!user || !(await user.comparePassword(password))) {
+//       return res.status(401).json({ msg: 'Invalid credentials' });
+//     }
+
+//     const token = generateToken(user);
+//     res.json({
+//       token,
+//       user: {
+//         id: user._id,
+//         email: user.email,
+//         role: user.role,
+//       },
+//     });
+//   } catch (err) {
+//     console.error('❌ Login Error:', err.message);
+//     res.status(500).json({ msg: 'Server error during login', error: err.message });
+//   }
+// });
+
+// module.exports = router;
 
 
 
